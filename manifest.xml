@@ -1,0 +1,16 @@
+<package>
+  <description brief="asio-serial-device">
+    Boost ASIO serial device wrapper
+  </description>
+  <author>Nathan Michael</author>
+  <license>GPL</license>
+  <review status="unreviewed" notes=""/>
+  <url>https://github.com/nmichael/asio-serial-device</url>
+
+  <export>
+      <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lasio_serial_device" />
+  </export>
+
+</package>
+
+
