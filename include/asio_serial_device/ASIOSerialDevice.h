@@ -46,7 +46,9 @@ class ASIOSerialDevice
 
   void Start();
   void Stop();
+  void Close();
 
+  void Read();
   bool Write(const std::vector<unsigned char>& msg);
   void Open(const std::string &device_, unsigned int baud_,
             ba::serial_port_base::parity parity =
@@ -61,7 +63,6 @@ class ASIOSerialDevice
   bool Active();
 
  private:
-  void Close();
   void CloseCallback(const boost::system::error_code& error);
 
   void ReadStart();
