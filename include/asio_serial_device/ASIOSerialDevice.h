@@ -33,6 +33,8 @@
 
 #define MAX_READ_LENGTH 512
 
+namespace ba = boost::asio;
+
 class ASIOSerialDevice
 {
  public:
@@ -46,7 +48,15 @@ class ASIOSerialDevice
   void Stop();
 
   bool Write(const std::vector<unsigned char>& msg);
-  void Open(const std::string& device, unsigned int baud);
+  void Open(const std::string &device_, unsigned int baud_,
+            ba::serial_port_base::parity parity =
+            ba::serial_port_base::parity(ba::serial_port_base::parity::none),
+            ba::serial_port_base::character_size csize =
+            ba::serial_port_base::character_size(8),
+            ba::serial_port_base::flow_control flow =
+            ba::serial_port_base::flow_control(ba::serial_port_base::flow_control::none),
+            ba::serial_port_base::stop_bits stop =
+            ba::serial_port_base::stop_bits(ba::serial_port_base::stop_bits::one));
 
   bool Active();
 
@@ -68,8 +78,8 @@ class ASIOSerialDevice
   std::deque< std::vector<unsigned char> > write_msgs;
 
   boost::thread thread;
-  boost::asio::io_service io_service;
-  boost::asio::serial_port* serial_port;
+  ba::io_service io_service;
+  ba::serial_port* serial_port;
   boost::function<void (const unsigned char*, size_t)> read_callback;
 
   unsigned char read_msg[MAX_READ_LENGTH];

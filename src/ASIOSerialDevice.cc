@@ -29,7 +29,8 @@ ASIOSerialDevice::ASIOSerialDevice()
   serial_port = 0;
 }
 
-ASIOSerialDevice::ASIOSerialDevice(const string &device, unsigned int baud)
+ASIOSerialDevice::ASIOSerialDevice(const string &device,
+                                   unsigned int baud)
 {
   active = false;
   open = false;
@@ -47,7 +48,12 @@ ASIOSerialDevice::~ASIOSerialDevice()
     delete serial_port;
 }
 
-void ASIOSerialDevice::Open(const string &device_, unsigned int baud_)
+void ASIOSerialDevice::Open(const string &device_,
+                            unsigned int baud_,
+                            ba::serial_port_base::parity parity,
+                            ba::serial_port_base::character_size csize,
+                            ba::serial_port_base::flow_control flow,
+                            ba::serial_port_base::stop_bits stop)
 {
   device = device_;
   baud = baud_;
@@ -56,7 +62,7 @@ void ASIOSerialDevice::Open(const string &device_, unsigned int baud_)
     {
       try
         {
-          serial_port = new boost::asio::serial_port(io_service, device);
+          serial_port = new ba::serial_port(io_service, device);
         }
       catch (std::exception e)
         {
@@ -67,8 +73,13 @@ void ASIOSerialDevice::Open(const string &device_, unsigned int baud_)
       if (!serial_port->is_open())
         throw runtime_error("Failed to open serial port");
 
-      boost::asio::serial_port_base::baud_rate baud(baud_);
+      ba::serial_port_base::baud_rate baud(baud_);
       serial_port->set_option(baud);
+
+      serial_port->set_option(parity);
+      serial_port->set_option(csize);
+      serial_port->set_option(flow);
+      serial_port->set_option(stop);
 
       open = true;
     }
@@ -88,7 +99,7 @@ void ASIOSerialDevice::Start()
 
   ReadStart();
 
-  thread = boost::thread(boost::bind(&boost::asio::io_service::run, &io_service));
+  thread = boost::thread(boost::bind(&ba::io_service::run, &io_service));
 
   active = true;
 
@@ -98,10 +109,10 @@ void ASIOSerialDevice::Start()
 void ASIOSerialDevice::ReadStart()
 {
   if (open)
-    serial_port->async_read_some(boost::asio::buffer(read_msg, MAX_READ_LENGTH),
+    serial_port->async_read_some(ba::buffer(read_msg, MAX_READ_LENGTH),
                                  boost::bind(&ASIOSerialDevice::ReadComplete,
-                                             this, boost::asio::placeholders::error,
-                                             boost::asio::placeholders::bytes_transferred));
+                                             this, ba::placeholders::error,
+                                             ba::placeholders::bytes_transferred));
 }
 
 void ASIOSerialDevice::ReadComplete(const boost::system::error_code& error,
@@ -131,7 +142,7 @@ void ASIOSerialDevice::Stop()
 
 void ASIOSerialDevice::CloseCallback(const boost::system::error_code& error)
 {
-  if (error && (error != boost::asio::error::operation_aborted))
+  if (error && (error != ba::error::operation_aborted))
     cerr << "Error: " << error.message() << endl;
 
   serial_port->close();
@@ -158,11 +169,11 @@ void ASIOSerialDevice::WriteCallback(const vector<unsigned char>& msg)
 
 void ASIOSerialDevice::WriteStart()
 {
-  boost::asio::async_write(*serial_port,
-                           boost::asio::buffer(&(write_msgs.front()[0]),
+  ba::async_write(*serial_port,
+                           ba::buffer(&(write_msgs.front()[0]),
                                                write_msgs.front().size()),
                            boost::bind(&ASIOSerialDevice::WriteComplete,
-                                       this, boost::asio::placeholders::error));
+                                       this, ba::placeholders::error));
 }
 
 void ASIOSerialDevice::WriteComplete(const boost::system::error_code& error)
