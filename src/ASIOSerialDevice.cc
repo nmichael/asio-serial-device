@@ -24,7 +24,7 @@ using namespace std;
 
 ASIOSerialDevice::ASIOSerialDevice()
 {
-  active = false;
+  async_active = false;
   open = false;
   serial_port = 0;
 }
@@ -32,7 +32,7 @@ ASIOSerialDevice::ASIOSerialDevice()
 ASIOSerialDevice::ASIOSerialDevice(const string &device,
                                    unsigned int baud)
 {
-  active = false;
+  async_active = false;
   open = false;
   serial_port = 0;
 
@@ -41,7 +41,10 @@ ASIOSerialDevice::ASIOSerialDevice(const string &device,
 
 ASIOSerialDevice::~ASIOSerialDevice()
 {
-  if (active)
+  if (open)
+    Close();
+
+  if (async_active)
     Stop();
 
   if (serial_port != 0)
@@ -89,14 +92,11 @@ void ASIOSerialDevice::Close()
 {
   if (open)
     {
-      if (active)
+      if (async_active)
         io_service.post(boost::bind(&ASIOSerialDevice::CloseCallback, this,
                                     boost::system::error_code()));
       else
-        {
-          serial_port->close();
-          open = false;
-        }
+        CloseCallback(boost::system::error_code());
     }
 }
 
@@ -109,7 +109,7 @@ void ASIOSerialDevice::Start()
 
   thread = boost::thread(boost::bind(&ba::io_service::run, &io_service));
 
-  active = true;
+  async_active = true;
 
   return;
 }
@@ -143,9 +143,8 @@ void ASIOSerialDevice::SetReadCallback(const boost::function<void (const unsigne
 
 void ASIOSerialDevice::Stop()
 {
-  Close();
   thread.join();
-  active = false;
+  async_active = false;
 }
 
 void ASIOSerialDevice::CloseCallback(const boost::system::error_code& error)
@@ -162,7 +161,7 @@ bool ASIOSerialDevice::Write(const vector<unsigned char>& msg)
   if (!open)
     return false;
 
-  if (active)
+  if (async_active)
     // Post for an asynchronous write
     io_service.post(boost::bind(&ASIOSerialDevice::WriteCallback, this, msg));
   else
@@ -203,12 +202,12 @@ void ASIOSerialDevice::WriteComplete(const boost::system::error_code& error)
 
 bool ASIOSerialDevice::Active()
 {
-  return active;
+  return async_active;
 }
 
 void ASIOSerialDevice::Read()
 {
-  if (active)
+  if (async_active)
     {
       cerr << "ASIOSerialDevice can operate in async or sync modes, not both" << endl;
       return;
@@ -217,6 +216,6 @@ void ASIOSerialDevice::Read()
   size_t bytes_transferred =
     serial_port->read_some(ba::buffer(read_msg, MAX_READ_LENGTH));
 
-  if (!read_callback.empty())
+  if (!read_callback.empty() && (bytes_transferred > 0))
     read_callback(const_cast<unsigned char *>(read_msg), bytes_transferred);
 }

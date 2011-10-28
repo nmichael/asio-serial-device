@@ -75,7 +75,7 @@ class ASIOSerialDevice
 
   std::string device;
   unsigned int baud;
-  bool active, open;
+  bool async_active, open;
   std::deque< std::vector<unsigned char> > write_msgs;
 
   boost::thread thread;
