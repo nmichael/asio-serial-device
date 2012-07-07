@@ -8,7 +8,8 @@
   <url>https://github.com/nmichael/asio-serial-device</url>
 
   <export>
-      <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lasio_serial_device" />
+    <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`"
+         lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lasio_serial_device `rosboost-cfg --lflags system,thread`"/>
   </export>
 
 </package>
